@@ -3,7 +3,7 @@
 Gacha-style loot for World of Warcraft: Forever. **Cosmetic only: it never changes what drops, only how it is shown.**
 
 ## Features
-- **Rolling loot window.** Every item stays hidden ("???") until you click it, then rolls up one quality at a time, from gray to what it really is, and goes into your bags. "Loot all" rolls everything. With auto loot, every item rolls at once, quickly.
+- **Rolling loot window.** Every item stays hidden ("???") until you click it, then rolls up one quality at a time, from gray to what it really is. It stays in the window until you click it again to loot it, and stays uncovered if you close the window and loot the same body again. "Loot all" rolls and loots everything. With auto loot, every item rolls at once, quickly.
 - **Pop-up for green or better items**, with floating "+N Stat!" text.
 - **Coin shower.** Every money gain (loot, quest rewards, mail, vendor sales) flies from your mouse into a money counter, with stingers when copper rolls over into silver and silver into gold.
 - **Item names at the mouse** after you loot, or a red "No loot" for an empty corpse.

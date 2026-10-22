@@ -3,7 +3,7 @@ local _, ns = ...
 
 -- An option with a parent is indented under it and grayed out while the parent is off.
 local OPTIONS = {
-	{ key = "rollingLoot", name = "Rolling loot window", tooltip = "Replace the loot window with one where each item stays hidden until you click it, then rolls up from gray to its real quality. Master loot always uses the normal window. If you use another loot window addon, turn this off and then type /reload." },
+	{ key = "rollingLoot", name = "Rolling loot window", tooltip = "Replace the loot window with one where each item stays hidden until you click it, then rolls up from gray to its real quality. Click it again to loot it. Master loot always uses the normal window. If you use another loot window addon, turn this off and then type /reload." },
 	{ key = "reveal", name = "Pop-up for green or better", tooltip = "Show a pop-up with floating stats when you loot an Uncommon (green) or better item." },
 	{ key = "holdChat", parent = "reveal", name = "Hold loot chat lines", tooltip = "Hide your \"You receive loot\" chat line until that item's pop-up finishes." },
 	{ key = "lootNames", name = "Item names at the mouse", tooltip = "Show each item's name just above your mouse after you loot it, or \"No loot\" for an empty corpse." },

@@ -1,7 +1,7 @@
 -- The rolling loot window: a look-alike of Blizzard's loot window in which every item stays
 -- sealed until you click it. It then rolls up, one quality at a time, to what it really is,
--- and is looted once the roll lands. With auto loot every item rolls at once, quickly, while
--- the game loots it.
+-- and stays revealed until a second click loots it. With auto loot every item rolls at once,
+-- quickly, while the game loots it.
 local _, ns = ...
 
 local WIDTH = 220
@@ -12,14 +12,17 @@ local FOOTER_HEIGHT = 38
 local ROLL_DELAY = 0.1
 local STEP_SECONDS = 0.3
 local STAGGER_SECONDS = 0.2
--- How long the revealed item stays in the window before it is looted.
+-- "Loot all": how long each revealed item stays in the window before it is looted.
 local REVEAL_HOLD = 0.6
 -- Auto loot: quicker steps, and each revealed item stays a moment after the game loots it.
 local RAPID_STEP_SECONDS = 0.07
 local RAPID_STAGGER_SECONDS = 0.05
 local RAPID_HOLD = 0.4
 local SOUND_GAP = 0.06
-local ROLLED_MEMORY_SECONDS = 120
+-- Long enough for a revealed item to wait for its second click.
+local ROLLED_MEMORY_SECONDS = 600
+-- Long enough to come back to a corpse before it despawns.
+local REVEAL_MEMORY_SECONDS = 900
 local MYSTERY_ICON = 134400
 local COIN_ICON = "Interface\\Icons\\INV_Misc_Coin_01"
 
@@ -66,6 +69,27 @@ function ns.WasRolled(link)
 	local itemID = C_Item.GetItemInfoInstant(link)
 	local landed = itemID and rolledAt[itemID]
 	return landed and GetTime() - landed < ROLLED_MEMORY_SECONDS
+end
+
+-- Revealed items are remembered per corpse (or chest), so closing the window and looting the
+-- same body again shows them already uncovered. Keyed by "sourceGUID:itemID"; the value is
+-- when the item was revealed. Lasts until /reload.
+local revealed = {}
+
+local function RevealKey(slot, itemID)
+	local guid = GetLootSourceInfo(slot)
+	if itemID and not issecretvalue(guid) and guid then
+		return guid .. ":" .. itemID
+	end
+	return nil
+end
+
+local function ForgetOldReveals(now)
+	for key, revealedAt in pairs(revealed) do
+		if now - revealedAt > REVEAL_MEMORY_SECONDS then
+			revealed[key] = nil
+		end
+	end
 end
 
 -- Callbacks waiting for an item's roll to land, by item ID (see ns.AfterRoll).
@@ -130,7 +154,9 @@ local function LootCoins(slot, roll)
 	LootSlot(slot)
 end
 
-local function OpenSlot(slot, delay)
+-- A click reveals a sealed item and a second click loots it. "Loot all" (lootAfterReveal) does
+-- both, looting each item once its reveal has shown.
+local function OpenSlot(slot, delay, lootAfterReveal)
 	local roll = rolls[slot]
 	-- Rows that linger after the game looted them are only there to finish their reveal.
 	if not roll or roll.locked or roll.looted or not sessionOpen then
@@ -139,16 +165,16 @@ local function OpenSlot(slot, delay)
 	if roll.coin then
 		LootCoins(slot, roll)
 	elseif roll.state == "done" and not roll.lootAt then
-		-- Revealed but still here (full bags, a declined bind prompt, auto loot that failed).
 		LootSlot(slot)
 	else
+		roll.lootAfterReveal = roll.lootAfterReveal or lootAfterReveal
 		StartRoll(roll, delay)
 	end
 end
 
 lootAllButton:SetScript("OnClick", function()
 	for i, slot in ipairs(SortedSlots()) do
-		OpenSlot(slot, ROLL_DELAY + (i - 1) * STAGGER_SECONDS)
+		OpenSlot(slot, ROLL_DELAY + (i - 1) * STAGGER_SECONDS, true)
 	end
 end)
 
@@ -175,6 +201,9 @@ local function OnRowEnter(row)
 	GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
 	if roll.state == "done" and roll.link and not issecretvalue(roll.link) then
 		GameTooltip:SetHyperlink(roll.link)
+		if not (roll.auto or roll.lootAt) then
+			GameTooltip:AddLine("Click to loot.", 0.2, 1, 0.2)
+		end
 	else
 		GameTooltip:SetText("???")
 		if roll.state == "rolling" then
@@ -337,6 +366,13 @@ local function ReadSlot(slot)
 	if slotType == Enum.LootSlotType.Money then
 		roll.coin = true
 		roll.amount = CoinAmount(slot, name)
+	else
+		roll.revealKey = RevealKey(slot, roll.itemID)
+		-- Already revealed on an earlier visit to this corpse.
+		if roll.revealKey and revealed[roll.revealKey] then
+			roll.state = "done"
+			roll.shown = roll.quality
+		end
 	end
 	return roll
 end
@@ -344,13 +380,19 @@ end
 -- With auto loot, every item starts rolling right away and quickly.
 local function ReadAllSlots(autoLoot)
 	ClearRolls()
+	ForgetOldReveals(GetTime())
 	local order = 0
 	for slot = 1, GetNumLootItems() do
 		local roll = ReadSlot(slot)
 		if roll and autoLoot and not roll.coin then
 			roll.auto = true
-			StartRoll(roll, order * RAPID_STAGGER_SECONDS, true)
-			order = order + 1
+			if roll.state == "sealed" then
+				StartRoll(roll, order * RAPID_STAGGER_SECONDS, true)
+				order = order + 1
+			else
+				-- Revealed on an earlier visit, so there is no reveal to wait for.
+				roll.held = true
+			end
 		end
 		rolls[slot] = roll
 	end
@@ -362,16 +404,19 @@ local function Land(roll, now)
 	if roll.itemID then
 		rolledAt[roll.itemID] = now
 	end
+	if roll.revealKey then
+		revealed[roll.revealKey] = now
+	end
 	RunWaiting(roll.itemID)
 	if roll.auto then
 		roll.holdUntil = now + RAPID_HOLD
-	else
+	elseif roll.lootAfterReveal then
 		roll.lootAt = now + REVEAL_HOLD
 	end
 end
 
--- Steps rolling items, loots clicked items once their reveal has shown, and removes auto-looted
--- items once theirs has. Runs only while the window is shown.
+-- Steps rolling items, loots "Loot all" items once their reveal has shown, and removes
+-- auto-looted items once theirs has. Runs only while the window is shown.
 frame:SetScript("OnUpdate", function()
 	local now = GetTime()
 	local removed = false
