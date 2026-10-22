@@ -1,0 +1,17 @@
+## Interface: 16001
+## Title: LootGacha
+## Notes: Gacha-style loot: items roll from gray up to their real quality and coins shower into a money counter. Cosmetic only; it never changes what drops.
+## Author: mahsi
+## Version: 1.0.0
+## Category: Bags & Inventory
+## IconTexture: Interface\Icons\INV_Misc_Coin_01
+## SavedVariables: LootGachaDB
+## AddonCompartmentFunc: LootGacha_OnAddonCompartmentClick
+## X-License: MIT
+
+Core.lua
+Coins.lua
+Reveal.lua
+LootWindow.lua
+LootNames.lua
+Options.lua
