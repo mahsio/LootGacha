@@ -45,7 +45,12 @@ frame.TitleContainer.TitleText:SetText(ITEMS)
 -- Lets Escape close the window, like Blizzard's.
 table.insert(UISpecialFrames, "LootGachaLootFrame")
 
-CreateFrame("Button", nil, frame, "UIPanelCloseButtonDefaultAnchors")
+-- The close button hides the window itself. The template's click handler goes through Blizzard's
+-- HideUIPanel, and hiding this window from inside it would taint the rest of that Blizzard code.
+local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButtonDefaultAnchors")
+closeButton:SetScript("OnClick", function()
+	frame:Hide()
+end)
 
 local lootAllButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
 lootAllButton:SetSize(110, 22)
@@ -485,15 +490,34 @@ local function IsMasterLoot()
 	return Plain(C_PartyInfo.GetLootMethod(), nil) == Enum.LootMethod.Masterlooter
 end
 
+-- True while the game's Gamepad UI is on (Options > Gamepad). interfaceStyle is the new style
+-- while the game is switching.
+local function UsingGamepadUI(interfaceStyle)
+	return (interfaceStyle or C_InputInterfaceStyle.GetCurrentStyle()) == Enum.InputDeviceInterfaceType.Gamepad
+end
+
+-- Ends this window's loot session, as closing Blizzard's window does. LOOT_CLOSED fires inside
+-- CloseLoot(), so every listener runs as LootGacha. With the Gamepad UI on, Blizzard's gamepad
+-- action bar answers it by clearing a dead target with ClearTarget(), which addons may not call:
+-- the game blocks it and blames LootGacha. So there the session is left for the game to close,
+-- when the player walks away or loots something else.
+local function EndSession()
+	if not UsingGamepadUI() then
+		CloseLoot()
+	end
+end
+
 local takenOver = false
 local retryPending = false
 
 -- Blizzard's loot window only listens to LOOT_OPENED and LOOT_CLOSED, so switching those off
 -- hands the loot session to this window without changing Blizzard's code. Master loot stays
--- with Blizzard's window because its assign menu depends on it. Blizzard's events are only
--- touched when the decision changes, so another loot addon that switched them off keeps them off.
-function ns.ApplyLootTakeover()
-	local takeOver = LootGachaDB.rollingLoot and not IsMasterLoot()
+-- with Blizzard's window because its assign menu depends on it. So does the Gamepad UI:
+-- Blizzard's window works with a gamepad, and closing it can't trip the blocked action that
+-- EndSession avoids. Blizzard's events are only touched when the decision changes, so another
+-- loot addon that switched them off keeps them off.
+function ns.ApplyLootTakeover(interfaceStyle)
+	local takeOver = LootGachaDB.rollingLoot and not IsMasterLoot() and not UsingGamepadUI(interfaceStyle)
 	-- Blizzard's window must still get its LOOT_CLOSED, so wait until it has closed.
 	if takeOver and not takenOver and LootFrame:IsShown() then
 		if not retryPending then
@@ -516,6 +540,8 @@ end
 frame:SetScript("OnEvent", function(_, event, arg1, arg2)
 	if event == "PARTY_LOOT_METHOD_CHANGED" or event == "GROUP_ROSTER_UPDATE" then
 		ns.ApplyLootTakeover()
+	elseif event == "INPUT_DEVICE_INTERFACE_TRANSITION" then
+		ns.ApplyLootTakeover(arg1)
 	elseif event == "LOOT_CLOSED" then
 		-- The bind prompt's slot number belongs to the session that just closed. Blizzard's
 		-- window clears it for the sessions it owns.
@@ -539,7 +565,7 @@ frame:SetScript("OnEvent", function(_, event, arg1, arg2)
 		if Layout() == 0 then
 			-- Replaces Blizzard's empty-loot sound.
 			ns.ShowNoLoot()
-			CloseLoot()
+			EndSession()
 			return
 		end
 		-- Shrinks a very long window once, on open, so the last rows and "Loot all" stay on screen.
@@ -572,18 +598,21 @@ frame:SetScript("OnEvent", function(_, event, arg1, arg2)
 end)
 FrameUtil.RegisterFrameForEvents(frame, {
 	"LOOT_OPENED", "LOOT_SLOT_CLEARED", "LOOT_SLOT_CHANGED", "LOOT_CLOSED", "PARTY_LOOT_METHOD_CHANGED", "GROUP_ROSTER_UPDATE",
+	"INPUT_DEVICE_INTERFACE_TRANSITION",
 })
 
--- Hiding the window (close button, Escape, or empty) ends its loot session, as Blizzard's does.
--- After the session already ended (auto-looted rows finishing), there is nothing to close.
+-- Closing the window with items still in it (close button or Escape) ends its loot session, as
+-- closing Blizzard's does. When it empties itself, the game ends a looted-out session on its own,
+-- and after the session already ended (auto-looted rows finishing) there is nothing to close.
 frame:HookScript("OnHide", function()
 	local owner = GameTooltip:GetOwner()
 	if owner and owner:GetParent() == frame then
 		GameTooltip:Hide()
 	end
+	local itemsLeft = next(rolls) ~= nil
 	ClearRolls()
-	if sessionOpen then
-		CloseLoot()
+	if sessionOpen and itemsLeft then
+		EndSession()
 	end
 end)
 

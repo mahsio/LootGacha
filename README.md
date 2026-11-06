@@ -19,7 +19,7 @@ Gacha-style loot for World of Warcraft: Forever. **Cosmetic only: it never chang
 
 ## Compatibility
 - If you use another loot window addon, turn off **Rolling loot window** and then type `/reload`.
-- Master loot always uses Blizzard's own loot window.
+- Master loot always uses Blizzard's own loot window, and so does the game's Gamepad UI (Options > Gamepad > Enable Gamepad UI), because Blizzard's window works with a gamepad. The pop-up, coin shower and item names still play.
 - The addon's own text is English. Item names, stats and coin names follow your client's language.
 
 ## Reporting bugs
