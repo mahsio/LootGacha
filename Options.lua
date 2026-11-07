@@ -9,8 +9,9 @@ local OPTIONS = {
 	{ key = "lootNames", name = "Item names at the mouse", tooltip = "Show each item's name just above your mouse after you loot it, or \"No loot\" for an empty corpse." },
 	{ key = "coins", name = "Coin shower", tooltip = "Fly the coins from every money gain (loot, quests, mail, vendor sales) into a money counter at your mouse." },
 	{ key = "hudAlways", name = "Always show money counter", tooltip = "Keep the money counter in one spot on screen instead of popping up at your mouse. Drag it to move it." },
+	{ key = "ammoCounter", name = "Ammo counter", tooltip = "When a shot or spell uses up your ammo or a class reagent such as Soul Shards, show how many you have left in the middle of the screen. Type /gacha ammo to move it." },
 	{ key = "sound", name = "Sound effects", tooltip = "Play LootGacha's sound effects." },
-	{ key = "debug", name = "Debug log", tooltip = "Print loot and money events to chat. Useful for bug reports." },
+	{ key = "debug", name = "Debug log", tooltip = "Print loot, money and ammo events to chat. Useful for bug reports." },
 }
 
 local category
@@ -19,6 +20,7 @@ local settings = {}
 local function Apply()
 	ns.UpdateHUD()
 	ns.ApplyLootTakeover()
+	ns.UpdateAmmoCounter()
 end
 
 table.insert(ns.onLoad, function()

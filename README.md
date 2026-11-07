@@ -8,6 +8,7 @@ Gacha-style loot for World of Warcraft: Forever. **Cosmetic only: it never chang
 - **Coin shower.** Every money gain (loot, quest rewards, mail, vendor sales) flies from your mouse into a money counter, with stingers when copper rolls over into silver and silver into gold.
 - **Item names at the mouse** after you loot, or a red "No loot" for an empty corpse.
 - **Your "You receive loot" chat line** waits until that item's pop-up has finished.
+- **Ammo counter.** When a shot or spell uses up your ammo or a class reagent (Soul Shards, Flash Powder, Rune of Teleportation and the like), how many you have left pops up in the middle of the screen with a red "-1". It stays up while you keep shooting and turns yellow, then red, as you run low.
 - Uses only the game's own sounds and art.
 
 ## Commands
@@ -15,7 +16,8 @@ Gacha-style loot for World of Warcraft: Forever. **Cosmetic only: it never chang
 - `/gacha test [0-5]`: preview the pop-up with one of your equipped items (0 = gray ... 5 = orange)
 - `/gacha coins [copper]`: preview a coin shower
 - `/gacha hud`: pin the money counter on screen so you can drag it
-- `/gacha debug`: toggle the loot and money event log
+- `/gacha ammo`: show the ammo counter so you can drag it; type it again to lock it
+- `/gacha debug`: toggle the loot, money and ammo event log
 
 ## Compatibility
 - If you use another loot window addon, turn off **Rolling loot window** and then type `/reload`.

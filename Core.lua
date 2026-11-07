@@ -10,6 +10,7 @@ ns.defaults = {
 	holdChat = true,
 	coins = true,
 	hudAlways = false,
+	ammoCounter = true,
 }
 
 -- Modules add functions here; they run once the saved variables are loaded.
@@ -377,6 +378,8 @@ SlashCmdList.LOOTGACHA = function(msg)
 		ns.StartCoinShower(number or ns.CopperToNextSilver(), true)
 	elseif command == "hud" then
 		ns.ToggleOption("hudAlways")
+	elseif command == "ammo" then
+		ns.ToggleAmmoMover()
 	elseif command == "debug" then
 		ns.ToggleOption("debug")
 	elseif command == "options" then
@@ -387,6 +390,7 @@ SlashCmdList.LOOTGACHA = function(msg)
 		print("  /gacha test [0-5] - preview the pop-up with one of your equipped items (0 = gray ... 5 = orange)")
 		print("  /gacha coins [copper] - preview a coin shower (default: just enough copper to roll over into 1 silver)")
 		print("  /gacha hud - pin the money counter on screen so you can drag it")
-		print("  /gacha debug - toggle the loot and money event log")
+		print("  /gacha ammo - show the ammo counter so you can drag it (type it again to lock it)")
+		print("  /gacha debug - toggle the loot, money and ammo event log")
 	end
 end

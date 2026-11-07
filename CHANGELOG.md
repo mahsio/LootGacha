@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.0
+- New ammo counter. When a shot or spell uses up your ammo or a class reagent (Soul Shards, Flash Powder, Rune of Teleportation and the like), how many you have left pops up in the middle of the screen with a red "-1". Type /gacha ammo to move it, or turn off "Ammo counter" in the settings.
+
 ## 1.0.2
 - Fixed "LootGacha has been blocked from an action only available to the Blizzard UI" with the Gamepad UI on, which could also collapse the gamepad action bars mid-combat. The live client's gamepad action bar clears a dead target whenever a loot window closes, and LootGacha closing its own window set that off.
 - With the Gamepad UI on, looting uses Blizzard's own loot window, which works with a gamepad. The pop-up, coin shower and item names still play.
